@@ -13,8 +13,9 @@ function Player:init(args)
     self:init_game_object(args)
     self:init_physics(args)
     self:init_unit(args)
-    self:set_as_circle(self.radius, "dynamic", "player")
-    self.color = self.color or {0.35, 0.82, 0.96}
+    self:set_as_rectangle(9, 9, "dynamic", "player")
+    self.color = self.color or {218 / 255, 218 / 255, 218 / 255, 1}
+    self.shadow_color = self.shadow_color or {0, 0, 0, 0.35}
 end
 
 function Player:update(dt)
@@ -32,10 +33,22 @@ function Player:update(dt)
 
     self:set_velocity(dx * self.mvspd, dy * self.mvspd)
     self:update_game_object(dt)
-    self:keep_inside(0, 0, love.graphics.getDimensions())
+    self:keep_inside(0, 0, gw, gh)
 end
 
 function Player:draw()
-    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
-    love.graphics.circle("fill", self.x, self.y, self.radius)
+    graphics.rectangle(
+        self.x + 1.5,
+        self.y + 1.5,
+        self.width,
+        self.height,
+        3,
+        3,
+        self.shadow_color
+    )
+    graphics.rectangle(self.x, self.y, self.width, self.height, 3, 3, self.color)
+
+    local arrow_x = self.x + 0.9 * self.width
+    graphics.line(arrow_x + 3, self.y, arrow_x, self.y - 3, self.color, 1)
+    graphics.line(arrow_x + 3, self.y, arrow_x, self.y + 3, self.color, 1)
 end
