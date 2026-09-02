@@ -1,9 +1,10 @@
-local player = {
-  x = 400,
-  y = 300,
-  radius = 18,
-  speed = 240,
-}
+require("engine.object")
+require("engine.game.gameobject")
+require("engine.game.physics")
+require("engine.game.unit")
+require("player")
+
+local player
 
 local target = {
   x = 600,
@@ -20,42 +21,29 @@ local function placeTarget()
 end
 
 function love.load()
+  player = Player{
+    x = 400,
+    y = 300,
+    radius = 18,
+    speed = 240,
+  }
+
   love.graphics.setBackgroundColor(0.06, 0.07, 0.09)
   love.graphics.setLineStyle("rough")
   placeTarget()
 end
 
 function love.update(dt)
-  local dx, dy = 0, 0
+  player:update(dt)
 
-  if love.keyboard.isDown("left", "a") then dx = dx - 1 end
-  if love.keyboard.isDown("right", "d") then dx = dx + 1 end
-  if love.keyboard.isDown("up", "w") then dy = dy - 1 end
-  if love.keyboard.isDown("down", "s") then dy = dy + 1 end
-
-  local length = math.sqrt(dx * dx + dy * dy)
-  if length > 0 then
-    dx, dy = dx / length, dy / length
-  end
-
-  player.x = player.x + dx * player.speed * dt
-  player.y = player.y + dy * player.speed * dt
-
-  local width, height = love.graphics.getDimensions()
-  player.x = math.max(player.radius, math.min(width - player.radius, player.x))
-  player.y = math.max(player.radius, math.min(height - player.radius, player.y))
-
-  local tx, ty = target.x - player.x, target.y - player.y
-  local collisionDistance = player.radius + target.radius
-  if tx * tx + ty * ty <= collisionDistance * collisionDistance then
+  if player:is_colliding_with_object(target) then
     score = score + 1
     placeTarget()
   end
 end
 
 function love.draw()
-  love.graphics.setColor(0.35, 0.82, 0.96)
-  love.graphics.circle("fill", player.x, player.y, player.radius)
+  player:draw()
 
   love.graphics.setColor(1.0, 0.78, 0.25)
   love.graphics.circle("fill", target.x, target.y, target.radius)

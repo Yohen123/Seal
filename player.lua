@@ -5,10 +5,37 @@
 ---
 
 Player = Object:extend()
+Player:implement(GameObject)
+Player:implement(Physics)
+Player:implement(Unit)
 
 function Player:init(args)
-    self.x = args.x
-    self.y = args.y
-    self.radius = args.radius
-    self.speed = args.speed
+    self:init_game_object(args)
+    self:init_physics(args)
+    self:init_unit(args)
+    self:set_as_circle(self.radius, "dynamic", "player")
+    self.color = self.color or {0.35, 0.82, 0.96}
+end
+
+function Player:update(dt)
+    local dx, dy = 0, 0
+
+    if love.keyboard.isDown("left", "a") then dx = dx - 1 end
+    if love.keyboard.isDown("right", "d") then dx = dx + 1 end
+    if love.keyboard.isDown("up", "w") then dy = dy - 1 end
+    if love.keyboard.isDown("down", "s") then dy = dy + 1 end
+
+    local length = math.sqrt(dx * dx + dy * dy)
+    if length > 0 then
+        dx, dy = dx / length, dy / length
+    end
+
+    self:set_velocity(dx * self.mvspd, dy * self.mvspd)
+    self:update_game_object(dt)
+    self:keep_inside(0, 0, love.graphics.getDimensions())
+end
+
+function Player:draw()
+    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+    love.graphics.circle("fill", self.x, self.y, self.radius)
 end
