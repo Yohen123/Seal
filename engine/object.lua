@@ -4,9 +4,8 @@
 --- DateTime: 2026/9/2 15:29
 ---
 
-local Object = {}
+Object = {}
 Object.__index = Object
-
 function Object:init()
 end
 
@@ -23,7 +22,7 @@ function Object:extend()
     return cls
 end
 
-function Object:implement()
+function Object:implement(...)
     for _, cls in pairs({...}) do
         for k, v in pairs(cls) do
             if self[k] == nil and type(v) == "function" then

@@ -4,4 +4,11 @@
 --- DateTime: 2026/9/2 12:29
 ---
 
-local Player = {}
+Player = Object:extend()
+
+function Player:init(args)
+    self.x = args.x
+    self.y = args.y
+    self.radius = args.radius
+    self.speed = args.speed
+end
