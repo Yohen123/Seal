@@ -6,11 +6,12 @@ require("engine.graphics.canvas")
 require("engine.game.gameobject")
 require("engine.game.physics")
 require("engine.game.unit")
-require("shell")
+require("projectile")
+require("hero")
 require("player")
 
 local player
-local shells
+local projectiles
 local game_canvas
 local ui_font
 local colors = {
@@ -18,6 +19,7 @@ local colors = {
   background_offset = {46 / 255, 46 / 255, 46 / 255, 1},
   foreground = {218 / 255, 218 / 255, 218 / 255, 1},
   yellow = {250 / 255, 207 / 255, 0, 1},
+  blue = {1 / 255, 155 / 255, 214 / 255, 1},
   red = {240 / 255, 79 / 255, 79 / 255, 1},
 }
 
@@ -31,28 +33,25 @@ function love.load()
   love.graphics.setFont(ui_font)
 
   game_canvas = Canvas(gw, gh)
+  projectiles = {}
   player = Player{
     x = 240,
     y = 135,
     speed = 120,
-    color = colors.yellow,
-  }
-  shells = {
-    Shell{
-      x = 300,
-      y = 135,
-      width = 19,
-      height = 19,
-      speed = 90,
-      color = colors.red,
-      accent_color = colors.yellow,
+    heroes = {
+      Hero{name = "SHOOTER", color = colors.yellow},
+      Hero{name = "GUARD", color = colors.blue},
     },
   }
 end
 
 function love.update(dt)
-  player:update(dt, shells)
-  for _, shell in ipairs(shells) do shell:update(dt) end
+  player:update(dt)
+
+  for index = #projectiles, 1, -1 do
+    projectiles[index]:update(dt)
+    if projectiles[index].dead then table.remove(projectiles, index) end
+  end
 end
 
 local function draw_background()
@@ -76,17 +75,19 @@ end
 local function draw_ui()
   graphics.set_color(colors.foreground)
   local line_height = ui_font:getHeight() + 2
-  love.graphics.print("MODE: " .. string.upper(player.state), 10, 9)
+  love.graphics.print("HERO: " .. player:get_active_hero().name, 10, 9)
   love.graphics.print("MOVE: WASD", 10, 9 + line_height)
-  local action = player.state == "shell" and "EJECT: Q" or "POSSESS: E"
-  love.graphics.print(action, 10, 9 + line_height * 2)
+  if player:can_switch() then
+    love.graphics.print("Q: READY", 10, 9 + line_height * 2)
+  else
+    love.graphics.print(string.format("Q: %.1f", player.switch_cooldown_time),
+      10, 9 + line_height * 2)
+  end
 end
 
 local function draw_game()
   draw_background()
-  for _, shell in ipairs(shells) do
-    shell:draw(player.target_shell == shell)
-  end
+  for _, projectile in ipairs(projectiles) do projectile:draw() end
   player:draw()
   draw_ui()
 end
@@ -105,6 +106,13 @@ end
 
 function love.keyreleased(key, scancode)
   player:keyreleased(key, scancode)
+end
+
+function love.mousepressed(x, y, button)
+  if button ~= 1 then return end
+  x, y = game_canvas:to_canvas_position(x, y)
+  if not x then return end
+  projectiles[#projectiles + 1] = player:shoot(x, y)
 end
 
 function love.focus(focused)

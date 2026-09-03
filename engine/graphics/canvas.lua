@@ -58,6 +58,15 @@ function Canvas:get_window_transform()
     return x, y, scale
 end
 
+function Canvas:to_canvas_position(x, y)
+    local offset_x, offset_y, scale = self:get_window_transform()
+    x = (x - offset_x) / scale
+    y = (y - offset_y) / scale
+
+    if x < 0 or x > self.width or y < 0 or y > self.height then return end
+    return x, y
+end
+
 function Canvas:draw_to_window()
     local x, y, scale = self:get_window_transform()
 
