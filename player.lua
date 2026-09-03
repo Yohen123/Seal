@@ -9,29 +9,25 @@ Player:implement(GameObject)
 Player:implement(Physics)
 Player:implement(Unit)
 
-local function lerp(a, b, t)
-    return a + (b - a) * t
-end
-
-local function is_held(keys, ...)
+function Player:is_held(...)
     for _, key in ipairs({...}) do
-        if keys[key] then return true end
+        if self.keys_down[key] then return true end
     end
     return false
 end
 
-local function input_direction(keys)
+function Player:input_direction()
     local dx, dy = 0, 0
-    if is_held(keys, "left", "a") then dx = dx - 1 end
-    if is_held(keys, "right", "d") then dx = dx + 1 end
-    if is_held(keys, "up", "w") then dy = dy - 1 end
-    if is_held(keys, "down", "s") then dy = dy + 1 end
+    if self:is_held("left", "a") then dx = dx - 1 end
+    if self:is_held("right", "d") then dx = dx + 1 end
+    if self:is_held("up", "w") then dy = dy - 1 end
+    if self:is_held("down", "s") then dy = dy + 1 end
     local length = math.sqrt(dx * dx + dy * dy)
     if length > 0 then return dx / length, dy / length end
     return 0, 0
 end
 
-local function draw_core(x, y, size, color, shadow_color)
+function Player:draw_core(x, y, size, color, shadow_color)
     graphics.rectangle(x + 1, y + 1, size, size, 2, 2, shadow_color)
     graphics.rectangle(x, y, size, size, 2, 2, color)
 end
@@ -40,6 +36,7 @@ function Player:init(args)
     self:init_game_object(args)
     self:init_physics(args)
     self:init_unit(args)
+    self.mvspd = self.mvspd or self.speed or 240
     self:set_as_rectangle(7, 7, "dynamic", "player")
     self.color = self.color or {250 / 255, 207 / 255, 0, 1}
     self.shadow_color = self.shadow_color or {0, 0, 0, 0.35}
@@ -63,7 +60,7 @@ function Player:update_target(shells)
 end
 
 function Player:update_core(dt)
-    local dx, dy = input_direction(self.keys_down)
+    local dx, dy = self:input_direction()
     self:set_velocity(dx * self.mvspd, dy * self.mvspd)
     self:update_game_object(dt)
     self:keep_inside(0, 0, gw, gh)
@@ -73,13 +70,13 @@ function Player:update_possessing(dt)
     self.possess_time = self.possess_time + dt
     local progress = math.min(self.possess_time / self.possess_duration, 1)
     local eased_progress = progress * progress
-    self.x = lerp(self.start_x, self.target_shell.x, eased_progress)
-    self.y = lerp(self.start_y, self.target_shell.y, eased_progress)
+    self.x = self.start_x + (self.target_shell.x - self.start_x) * eased_progress
+    self.y = self.start_y + (self.target_shell.y - self.start_y) * eased_progress
     if progress == 1 then self:finish_possessing() end
 end
 
 function Player:update_shell()
-    local dx, dy = input_direction(self.keys_down)
+    local dx, dy = self:input_direction()
     self.shell:set_move_direction(dx, dy)
 end
 
@@ -133,10 +130,10 @@ end
 function Player:draw_trail(progress)
     for index = 1, 3 do
         local trail_progress = math.max(0, progress - index * 0.08)
-        local x = lerp(self.start_x, self.target_shell.x, trail_progress ^ 2)
-        local y = lerp(self.start_y, self.target_shell.y, trail_progress ^ 2)
+        local x = self.start_x + (self.target_shell.x - self.start_x) * trail_progress ^ 2
+        local y = self.start_y + (self.target_shell.y - self.start_y) * trail_progress ^ 2
         local trail_color = {self.color[1], self.color[2], self.color[3], 0.35}
-        draw_core(x, y, 5 - index, trail_color, self.shadow_color)
+        self:draw_core(x, y, 5 - index, trail_color, self.shadow_color)
     end
 end
 
@@ -146,11 +143,11 @@ function Player:draw_possession()
     graphics.line(self.start_x, self.start_y,
         self.target_shell.x, self.target_shell.y, trail_color, 1)
     self:draw_trail(progress)
-    draw_core(self.x, self.y, 7 - progress * 3, self.color, self.shadow_color)
+    self:draw_core(self.x, self.y, 7 - progress * 3, self.color, self.shadow_color)
 end
 
 function Player:draw()
     if self.state == "shell" then return end
     if self.state == "possessing" then return self:draw_possession() end
-    draw_core(self.x, self.y, 7, self.color, self.shadow_color)
+    self:draw_core(self.x, self.y, 7, self.color, self.shadow_color)
 end

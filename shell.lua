@@ -9,6 +9,7 @@ function Shell:init(args)
     self:init_game_object(args)
     self:init_physics(args)
     self:init_unit(args)
+    self.mvspd = self.mvspd or self.speed or 240
     self:set_as_rectangle(self.width or 19, self.height or 19, "dynamic", "shell")
     self.color = self.color or white
     self.accent_color = self.accent_color or white
