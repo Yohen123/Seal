@@ -5,7 +5,7 @@ Projectile:implement(Physics)
 function Projectile:init(args)
     self:init_game_object(args)
     self:init_physics(args)
-    self.speed = self.speed or 220
+    self.speed = self.speed or 160
     self.damage = self.damage or 10
     self.width = self.width or 6
     self.height = self.height or 2

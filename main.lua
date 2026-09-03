@@ -21,8 +21,9 @@ local effects
 local game_canvas
 local ui_font
 local colors = {
-  background = {48 / 255, 48 / 255, 48 / 255, 1},
-  background_offset = {46 / 255, 46 / 255, 46 / 255, 1},
+  background = {43 / 255, 46 / 255, 46 / 255, 1},
+  background_offset = {40 / 255, 43 / 255, 43 / 255, 1},
+  hp_bar_background = {12 / 255, 14 / 255, 15 / 255, 1},
   foreground = {218 / 255, 218 / 255, 218 / 255, 1},
   yellow = {250 / 255, 207 / 255, 0, 1},
   blue = {1 / 255, 155 / 255, 214 / 255, 1},
@@ -47,7 +48,7 @@ function love.load()
       y = 85,
       color = colors.red,
       hit_color = colors.foreground,
-      hp_bar_background = colors.background_offset,
+      hp_bar_background = colors.hp_bar_background,
       effects = effects,
     },
     Enemy{
@@ -55,7 +56,7 @@ function love.load()
       y = 135,
       color = colors.red,
       hit_color = colors.foreground,
-      hp_bar_background = colors.background_offset,
+      hp_bar_background = colors.hp_bar_background,
       effects = effects,
     },
     Enemy{
@@ -63,14 +64,13 @@ function love.load()
       y = 185,
       color = colors.red,
       hit_color = colors.foreground,
-      hp_bar_background = colors.background_offset,
+      hp_bar_background = colors.hp_bar_background,
       effects = effects,
     },
   }
   player = Player{
     x = 240,
     y = 135,
-    speed = 120,
     heroes = {
       Hero{name = "SHOOTER", color = colors.yellow},
       Hero{name = "GUARD", color = colors.blue},
@@ -101,18 +101,17 @@ local function draw_background()
   for column = 0, math.ceil(gw / 22) do
     for row = 0, math.ceil(gh / 22) do
       if (column + row) % 2 == 1 then
-        graphics.rectangle2(
-          column * 22,
-          row * 22,
-          22,
-          22,
-          nil,
-          nil,
-          colors.background_offset
-        )
+        graphics.rectangle2(column * 22, row * 22, 22, 22, nil, nil, colors.background_offset)
       end
     end
   end
+
+  love.graphics.push("all")
+  for y = 0, gh - 1 do
+    love.graphics.setColor(0, 0, 0, 0.24 * y / gh)
+    love.graphics.line(0, y, gw, y)
+  end
+  love.graphics.pop()
 end
 
 local function draw_ui()

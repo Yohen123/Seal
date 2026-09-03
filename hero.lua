@@ -3,7 +3,7 @@ Hero = Object:extend()
 function Hero:init(args)
     self.name = args.name
     self.color = args.color
-    self.projectile_speed = args.projectile_speed or 220
+    self.projectile_speed = args.projectile_speed or 160
     self.projectile_damage = args.projectile_damage or 10
     self.attack_range = args.attack_range or 160
     self.attack_interval = args.attack_interval or 0.6

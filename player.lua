@@ -7,7 +7,7 @@ function Player:init(args)
     self:init_game_object(args)
     self:init_physics(args)
     self:init_unit(args)
-    self.mvspd = self.mvspd or self.speed or 240
+    self.mvspd = self.mvspd or 75
     self.size = self.size or 7
     self:set_as_rectangle(self.size, self.size, "dynamic", "player")
     self.color = self.color or {250 / 255, 207 / 255, 0, 1}
