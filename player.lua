@@ -3,18 +3,35 @@ Player:implement(GameObject)
 Player:implement(Physics)
 Player:implement(Unit)
 
+local function ease_out_cubic(t)
+    return 1 - (1 - t) ^ 3
+end
+
+local function color_with_alpha(color, alpha)
+    return {color.r or color[1], color.g or color[2], color.b or color[3], alpha}
+end
+
 function Player:init(args)
     self:init_game_object(args)
     self:init_physics(args)
     self:init_unit(args)
-    self.mvspd = self.mvspd or 75
     self.size = self.size or 7
     self:set_as_rectangle(self.size, self.size, "dynamic", "player")
     self.color = self.color or {250 / 255, 207 / 255, 0, 1}
     self.shadow_color = self.shadow_color or {0, 0, 0, 0.35}
     self.heroes = self.heroes or {}
     self.active_hero_index = 1
-    self.keys_down = {}
+    self.aim_r = 0
+    self.arrow_distance = 13
+    self.dash_distance = 48
+    self.dash_windup = 0.05
+    self.dash_travel = 0.08
+    self.dash_land = 0.10
+    self.dash_duration = self.dash_windup + self.dash_travel + self.dash_land
+    self.dash_cooldown = 0.5
+    self.dash_cooldown_time = 0
+    self.dashing = false
+    self.dash_time = 0
     self.switching = false
     self.switch_time = 0
     self.switch_cooldown = 2
@@ -24,22 +41,45 @@ function Player:init(args)
     self.switch_duration = 0.20
 end
 
-function Player:is_held(...)
-    for _, key in ipairs({...}) do
-        if self.keys_down[key] then return true end
+function Player:set_aim_position(x, y)
+    if not x or not y or self.dashing then return end
+    if (x - self.x) ^ 2 + (y - self.y) ^ 2 > 1 then
+        self.aim_r = math.atan2(y - self.y, x - self.x)
     end
-    return false
 end
 
-function Player:input_direction()
-    local dx, dy = 0, 0
-    if self:is_held("left", "a") then dx = dx - 1 end
-    if self:is_held("right", "d") then dx = dx + 1 end
-    if self:is_held("up", "w") then dy = dy - 1 end
-    if self:is_held("down", "s") then dy = dy + 1 end
-    local length = math.sqrt(dx * dx + dy * dy)
-    if length > 0 then return dx / length, dy / length end
-    return 0, 0
+function Player:can_dash()
+    return not self.dashing and self.dash_cooldown_time == 0
+end
+
+function Player:start_dash()
+    if not self:can_dash() then return end
+
+    local half_size = self.size / 2
+    self.dash_start_x, self.dash_start_y = self.x, self.y
+    self.dash_target_x = math.max(half_size,
+        math.min(gw - half_size, self.x + math.cos(self.aim_r) * self.dash_distance))
+    self.dash_target_y = math.max(half_size,
+        math.min(gh - half_size, self.y + math.sin(self.aim_r) * self.dash_distance))
+    self.dash_time = 0
+    self.dashing = true
+    self.dash_cooldown_time = self.dash_cooldown
+end
+
+function Player:get_dash_travel_progress()
+    return math.max(0, math.min(1,
+        (self.dash_time - self.dash_windup) / self.dash_travel))
+end
+
+function Player:update_dash(dt)
+    self.dash_cooldown_time = math.max(self.dash_cooldown_time - dt, 0)
+    if not self.dashing then return end
+
+    self.dash_time = math.min(self.dash_time + dt, self.dash_duration)
+    local progress = ease_out_cubic(self:get_dash_travel_progress())
+    self.x = self.dash_start_x + (self.dash_target_x - self.dash_start_x) * progress
+    self.y = self.dash_start_y + (self.dash_target_y - self.dash_start_y) * progress
+    if self.dash_time == self.dash_duration then self.dashing = false end
 end
 
 function Player:get_active_hero()
@@ -82,13 +122,6 @@ function Player:update_switch(dt)
     if self.switch_time == self.switch_duration then self.switching = false end
 end
 
-function Player:update_movement(dt)
-    local dx, dy = self:input_direction()
-    self:set_velocity(dx * self.mvspd, dy * self.mvspd)
-    self:update_game_object(dt)
-    self:keep_inside(0, 0, gw, gh)
-end
-
 function Player:update_heroes(dt)
     for _, hero in ipairs(self.heroes) do hero:update(dt) end
 end
@@ -123,23 +156,14 @@ function Player:update_attack(enemies, projectiles)
 end
 
 function Player:update(dt, enemies, projectiles)
-    self:update_movement(dt)
+    self:update_dash(dt)
     self:update_switch(dt)
     self:update_heroes(dt)
     self:update_attack(enemies, projectiles)
 end
 
 function Player:keypressed(key, scancode)
-    self.keys_down[scancode or key] = true
     if (scancode or key) == "q" then self:start_switch() end
-end
-
-function Player:keyreleased(key, scancode)
-    self.keys_down[scancode or key] = nil
-end
-
-function Player:clear_input()
-    self.keys_down = {}
 end
 
 function Player:get_draw_size()
@@ -166,10 +190,76 @@ function Player:draw_rounded_square(x, y, size, color)
 end
 
 function Player:draw_core(size)
-    self:draw_rounded_square(self.x + 1, self.y + 1, size, self.shadow_color)
-    self:draw_rounded_square(self.x, self.y, size, self:get_color())
+    local sx, sy = self:get_dash_scale()
+    love.graphics.push("all")
+    love.graphics.translate(self.x, self.y)
+    if self.dashing then love.graphics.rotate(self.aim_r) end
+    love.graphics.scale(sx, sy)
+    self:draw_rounded_square(1, 1, size, self.shadow_color)
+    self:draw_rounded_square(0, 0, size, self:get_color())
+    love.graphics.pop()
+end
+
+function Player:get_dash_scale()
+    if not self.dashing then return 1, 1 end
+
+    if self.dash_time < self.dash_windup then
+        local progress = self.dash_time / self.dash_windup
+        return 1 - 0.35 * progress, 1 + 0.15 * progress
+    end
+
+    if self.dash_time < self.dash_windup + self.dash_travel then
+        local progress = self:get_dash_travel_progress()
+        local stretch = math.sin(progress * math.pi)
+        return 0.65 + 0.35 * progress + 0.9 * stretch,
+            1.15 - 0.15 * progress - 0.55 * stretch
+    end
+
+    local progress = (self.dash_time - self.dash_windup - self.dash_travel) / self.dash_land
+    local pop = math.sin(progress * math.pi)
+    return 1 + 0.2 * pop, 1 + 0.2 * pop
+end
+
+function Player:draw_dash_trail(size)
+    if not self.dashing or self.dash_time <= self.dash_windup then return end
+
+    local progress = self:get_dash_travel_progress()
+    local land_progress = math.max(0,
+        (self.dash_time - self.dash_windup - self.dash_travel) / self.dash_land)
+    local fade = 1 - math.min(land_progress, 1)
+
+    for index = 1, 2 do
+        local trail_progress = ease_out_cubic(math.max(progress - index * 0.14, 0))
+        local x = self.dash_start_x + (self.dash_target_x - self.dash_start_x) * trail_progress
+        local y = self.dash_start_y + (self.dash_target_y - self.dash_start_y) * trail_progress
+
+        love.graphics.push("all")
+        love.graphics.translate(x, y)
+        love.graphics.rotate(self.aim_r)
+        love.graphics.scale(1.25, 0.6)
+        self:draw_rounded_square(0, 0, size,
+            color_with_alpha(self:get_color(), 0.18 * fade / index))
+        love.graphics.pop()
+    end
+end
+
+function Player:draw_aim_arrow()
+    if self.dashing then return end
+    local scale = 1 - 0.35 * self.dash_cooldown_time / self.dash_cooldown
+    local x = self.x + math.cos(self.aim_r) * self.arrow_distance
+    local y = self.y + math.sin(self.aim_r) * self.arrow_distance
+
+    love.graphics.push("all")
+    love.graphics.translate(x, y)
+    love.graphics.rotate(self.aim_r)
+    love.graphics.scale(scale, scale)
+    graphics.polygon({4, 0, -3, -3, -1, 0, -3, 3}, self:get_color())
+    love.graphics.pop()
 end
 
 function Player:draw()
-    self:draw_core(self:get_draw_size())
+    local size = self:get_draw_size()
+    self:draw_dash_trail(size)
+    self:draw_core(size)
+    self:draw_aim_arrow()
 end

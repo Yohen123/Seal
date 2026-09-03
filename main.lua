@@ -22,7 +22,8 @@ local game_canvas
 local ui_font
 local colors = {
   background = {43 / 255, 46 / 255, 46 / 255, 1},
-  background_offset = {40 / 255, 43 / 255, 43 / 255, 1},
+  background_dark = {41 / 255, 44 / 255, 44 / 255, 1},
+  background_light = {48 / 255, 51 / 255, 51 / 255, 1},
   hp_bar_background = {12 / 255, 14 / 255, 15 / 255, 1},
   foreground = {218 / 255, 218 / 255, 218 / 255, 1},
   yellow = {250 / 255, 207 / 255, 0, 1},
@@ -79,6 +80,8 @@ function love.load()
 end
 
 function love.update(dt)
+  local mouse_x, mouse_y = game_canvas:to_canvas_position(love.mouse.getPosition())
+  player:set_aim_position(mouse_x, mouse_y)
   player:update(dt, enemies, projectiles)
 
   for index = #enemies, 1, -1 do
@@ -98,27 +101,18 @@ function love.update(dt)
 end
 
 local function draw_background()
-  for column = 0, math.ceil(gw / 22) do
-    for row = 0, math.ceil(gh / 22) do
-      if (column + row) % 2 == 1 then
-        graphics.rectangle2(column * 22, row * 22, 22, 22, nil, nil, colors.background_offset)
-      end
-    end
-  end
-
-  love.graphics.push("all")
-  for y = 0, gh - 1 do
-    love.graphics.setColor(0, 0, 0, 0.24 * y / gh)
-    love.graphics.line(0, y, gw, y)
-  end
-  love.graphics.pop()
+  local x, y = gw / 2, gh / 2
+  graphics.polygon({x, y, 0, 0, 170, 0}, colors.background_dark)
+  graphics.polygon({x, y, gw, 212, gw, gh, 310, gh}, colors.background_dark)
+  graphics.polygon({x, y, 310, 0, gw, 0, gw, 58}, colors.background_light)
+  graphics.polygon({x, y, 170, gh, 0, gh, 0, 212}, colors.background_light)
 end
 
 local function draw_ui()
   graphics.set_color(colors.foreground)
   local line_height = ui_font:getHeight() + 2
   love.graphics.print("HERO: " .. player:get_active_hero().name, 10, 9)
-  love.graphics.print("MOVE: WASD", 10, 9 + line_height)
+  love.graphics.print("DASH: LEFT CLICK", 10, 9 + line_height)
   if player:can_switch() then
     love.graphics.print("Q: READY", 10, 9 + line_height * 2)
   else
@@ -148,10 +142,10 @@ function love.keypressed(key, scancode)
   end
 end
 
-function love.keyreleased(key, scancode)
-  player:keyreleased(key, scancode)
-end
-
-function love.focus(focused)
-  if not focused then player:clear_input() end
+function love.mousepressed(x, y, button)
+  if button ~= 1 then return end
+  local mouse_x, mouse_y = game_canvas:to_canvas_position(x, y)
+  if not mouse_x then return end
+  player:set_aim_position(mouse_x, mouse_y)
+  player:start_dash()
 end

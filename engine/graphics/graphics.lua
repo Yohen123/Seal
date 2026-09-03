@@ -34,6 +34,10 @@ function graphics.rectangle2(x, y, width, height, rx, ry, color, line_width)
     graphics.shape("rectangle", color, line_width, x, y, width, height, rx, ry)
 end
 
+function graphics.polygon(vertices, color, line_width)
+    graphics.shape("polygon", color, line_width, vertices)
+end
+
 function graphics.circle(x, y, radius, color, line_width)
     graphics.shape("circle", color, line_width, x, y, radius)
 end
