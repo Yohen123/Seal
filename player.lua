@@ -9,46 +9,148 @@ Player:implement(GameObject)
 Player:implement(Physics)
 Player:implement(Unit)
 
+local function lerp(a, b, t)
+    return a + (b - a) * t
+end
+
+local function is_held(keys, ...)
+    for _, key in ipairs({...}) do
+        if keys[key] then return true end
+    end
+    return false
+end
+
+local function input_direction(keys)
+    local dx, dy = 0, 0
+    if is_held(keys, "left", "a") then dx = dx - 1 end
+    if is_held(keys, "right", "d") then dx = dx + 1 end
+    if is_held(keys, "up", "w") then dy = dy - 1 end
+    if is_held(keys, "down", "s") then dy = dy + 1 end
+    local length = math.sqrt(dx * dx + dy * dy)
+    if length > 0 then return dx / length, dy / length end
+    return 0, 0
+end
+
+local function draw_core(x, y, size, color, shadow_color)
+    graphics.rectangle(x + 1, y + 1, size, size, 2, 2, shadow_color)
+    graphics.rectangle(x, y, size, size, 2, 2, color)
+end
+
 function Player:init(args)
     self:init_game_object(args)
     self:init_physics(args)
     self:init_unit(args)
-    self:set_as_rectangle(9, 9, "dynamic", "player")
-    self.color = self.color or {218 / 255, 218 / 255, 218 / 255, 1}
+    self:set_as_rectangle(7, 7, "dynamic", "player")
+    self.color = self.color or {250 / 255, 207 / 255, 0, 1}
     self.shadow_color = self.shadow_color or {0, 0, 0, 0.35}
+    self.state = "core"
+    self.keys_down = {}
+    self.possess_range = 72
+    self.possess_duration = 0.22
 end
 
-function Player:update(dt)
-    local dx, dy = 0, 0
-
-    if love.keyboard.isDown("left", "a") then dx = dx - 1 end
-    if love.keyboard.isDown("right", "d") then dx = dx + 1 end
-    if love.keyboard.isDown("up", "w") then dy = dy - 1 end
-    if love.keyboard.isDown("down", "s") then dy = dy + 1 end
-
-    local length = math.sqrt(dx * dx + dy * dy)
-    if length > 0 then
-        dx, dy = dx / length, dy / length
+function Player:update_target(shells)
+    if self.state ~= "core" then return end
+    self.target_shell = nil
+    local nearest_distance = self.possess_range
+    for _, shell in ipairs(shells or {}) do
+        local distance = self:distance_to_object(shell)
+        if shell:is_available() and distance <= nearest_distance then
+            self.target_shell = shell
+            nearest_distance = distance
+        end
     end
+end
 
+function Player:update_core(dt)
+    local dx, dy = input_direction(self.keys_down)
     self:set_velocity(dx * self.mvspd, dy * self.mvspd)
     self:update_game_object(dt)
     self:keep_inside(0, 0, gw, gh)
 end
 
-function Player:draw()
-    graphics.rectangle(
-        self.x + 1.5,
-        self.y + 1.5,
-        self.width,
-        self.height,
-        3,
-        3,
-        self.shadow_color
-    )
-    graphics.rectangle(self.x, self.y, self.width, self.height, 3, 3, self.color)
+function Player:update_possessing(dt)
+    self.possess_time = self.possess_time + dt
+    local progress = math.min(self.possess_time / self.possess_duration, 1)
+    local eased_progress = progress * progress
+    self.x = lerp(self.start_x, self.target_shell.x, eased_progress)
+    self.y = lerp(self.start_y, self.target_shell.y, eased_progress)
+    if progress == 1 then self:finish_possessing() end
+end
 
-    local arrow_x = self.x + 0.9 * self.width
-    graphics.line(arrow_x + 3, self.y, arrow_x, self.y - 3, self.color, 1)
-    graphics.line(arrow_x + 3, self.y, arrow_x, self.y + 3, self.color, 1)
+function Player:update_shell()
+    local dx, dy = input_direction(self.keys_down)
+    self.shell:set_move_direction(dx, dy)
+end
+
+function Player:update(dt, shells)
+    self:update_target(shells)
+    if self.state == "core" then self:update_core(dt) end
+    if self.state == "possessing" then self:update_possessing(dt) end
+    if self.state == "shell" then self:update_shell() end
+end
+
+function Player:start_possessing()
+    if not self.target_shell then return end
+    self.state = "possessing"
+    self.start_x, self.start_y = self.x, self.y
+    self.possess_time = 0
+    self:stop()
+end
+
+function Player:finish_possessing()
+    self.shell = self.target_shell
+    self.target_shell = nil
+    self.state = "shell"
+    self.shell:start_possession_effect()
+end
+
+function Player:eject()
+    if self.state ~= "shell" then return end
+    self.x = self.shell.x - self.shell.width - 8
+    self.y = self.shell.y
+    self.shell:set_controlled(false)
+    self.shell = nil
+    self.state = "core"
+    self:keep_inside(0, 0, gw, gh)
+end
+
+function Player:keypressed(key, scancode)
+    local input = scancode or key
+    self.keys_down[input] = true
+    if input == "e" and self.state == "core" then self:start_possessing() end
+    if input == "q" and self.state == "shell" then self:eject() end
+end
+
+function Player:keyreleased(key, scancode)
+    self.keys_down[scancode or key] = nil
+end
+
+function Player:clear_input()
+    self.keys_down = {}
+end
+
+function Player:draw_trail(progress)
+    for index = 1, 3 do
+        local trail_progress = math.max(0, progress - index * 0.08)
+        local x = lerp(self.start_x, self.target_shell.x, trail_progress ^ 2)
+        local y = lerp(self.start_y, self.target_shell.y, trail_progress ^ 2)
+        local trail_color = {self.color[1], self.color[2], self.color[3], 0.35}
+        draw_core(x, y, 5 - index, trail_color, self.shadow_color)
+    end
+end
+
+function Player:draw_possession()
+    local progress = math.min(self.possess_time / self.possess_duration, 1)
+    local trail_color = {self.color[1], self.color[2], self.color[3], 0.3}
+    graphics.line(self.start_x, self.start_y,
+        self.target_shell.x, self.target_shell.y, trail_color, 1)
+    self:draw_trail(progress)
+    draw_core(self.x, self.y, 7 - progress * 3, self.color, self.shadow_color)
+end
+
+function Player:draw()
+    if self.state == "shell" then return end
+    if self.state == "possessing" then return self:draw_possession() end
+    draw_core(self.x, self.y, 7, self.color, self.shadow_color)
 end
