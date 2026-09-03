@@ -1,17 +1,23 @@
 gw, gh = 480, 270
 
 require("engine.object")
+require("engine.math.spring")
 require("engine.graphics.graphics")
 require("engine.graphics.canvas")
 require("engine.game.gameobject")
+require("effect")
 require("engine.game.physics")
+require("engine.game.steering")
 require("engine.game.unit")
 require("projectile")
+require("enemy")
 require("hero")
 require("player")
 
 local player
 local projectiles
+local enemies
+local effects
 local game_canvas
 local ui_font
 local colors = {
@@ -20,7 +26,7 @@ local colors = {
   foreground = {218 / 255, 218 / 255, 218 / 255, 1},
   yellow = {250 / 255, 207 / 255, 0, 1},
   blue = {1 / 255, 155 / 255, 214 / 255, 1},
-  red = {240 / 255, 79 / 255, 79 / 255, 1},
+  red = {233 / 255, 29 / 255, 57 / 255, 1},
 }
 
 function love.load()
@@ -34,6 +40,33 @@ function love.load()
 
   game_canvas = Canvas(gw, gh)
   projectiles = {}
+  effects = {}
+  enemies = {
+    Enemy{
+      x = 360,
+      y = 85,
+      color = colors.red,
+      hit_color = colors.foreground,
+      hp_bar_background = colors.background_offset,
+      effects = effects,
+    },
+    Enemy{
+      x = 400,
+      y = 135,
+      color = colors.red,
+      hit_color = colors.foreground,
+      hp_bar_background = colors.background_offset,
+      effects = effects,
+    },
+    Enemy{
+      x = 360,
+      y = 185,
+      color = colors.red,
+      hit_color = colors.foreground,
+      hp_bar_background = colors.background_offset,
+      effects = effects,
+    },
+  }
   player = Player{
     x = 240,
     y = 135,
@@ -48,9 +81,19 @@ end
 function love.update(dt)
   player:update(dt)
 
+  for index = #enemies, 1, -1 do
+    enemies[index]:update(dt, player, enemies)
+    if enemies[index].dead then table.remove(enemies, index) end
+  end
+
   for index = #projectiles, 1, -1 do
-    projectiles[index]:update(dt)
+    projectiles[index]:update(dt, enemies)
     if projectiles[index].dead then table.remove(projectiles, index) end
+  end
+
+  for index = #effects, 1, -1 do
+    effects[index]:update(dt)
+    if effects[index].dead then table.remove(effects, index) end
   end
 end
 
@@ -88,7 +131,9 @@ end
 local function draw_game()
   draw_background()
   for _, projectile in ipairs(projectiles) do projectile:draw() end
+  for _, enemy in ipairs(enemies) do enemy:draw() end
   player:draw()
+  for _, effect in ipairs(effects) do effect:draw() end
   draw_ui()
 end
 

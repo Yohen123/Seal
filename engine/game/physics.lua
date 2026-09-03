@@ -19,10 +19,16 @@ end
 local function circle_rectangle_collision(circle, radius, rectangle, width, height)
     local half_width = width / 2
     local half_height = height / 2
-    local closest_x = math.max(rectangle.x - half_width, math.min(circle.x, rectangle.x + half_width))
-    local closest_y = math.max(rectangle.y - half_height, math.min(circle.y, rectangle.y + half_height))
-    local dx = circle.x - closest_x
-    local dy = circle.y - closest_y
+    local dx = circle.x - rectangle.x
+    local dy = circle.y - rectangle.y
+    local cosine = math.cos(rectangle.r or 0)
+    local sine = math.sin(rectangle.r or 0)
+    local local_x = cosine * dx + sine * dy
+    local local_y = -sine * dx + cosine * dy
+    local closest_x = math.max(-half_width, math.min(local_x, half_width))
+    local closest_y = math.max(-half_height, math.min(local_y, half_height))
+    dx = local_x - closest_x
+    dy = local_y - closest_y
 
     return dx * dx + dy * dy <= radius * radius
 end
