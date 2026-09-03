@@ -11,7 +11,7 @@ end
 function HitParticle:init(args)
     self:init_game_object(args)
     self.speed = self.speed or 50 + love.math.random() * 100
-    self.r = self.r or love.math.random() * 2 * math.pi
+    self.r = args.r or love.math.random() * 2 * math.pi
     self.duration = self.duration or 0.2 + love.math.random() * 0.4
     self.width = self.width or 3.5 + love.math.random() * 3.5
     self.height = self.height or self.width / 2
@@ -47,7 +47,7 @@ function HitCircle:init(args)
     self:init_game_object(args)
     self.radius = self.radius or 12
     self.start_radius = self.radius
-    self.duration = self.duration or 0.3
+    self.duration = self.duration or 0.05
     self.time = 0
 end
 

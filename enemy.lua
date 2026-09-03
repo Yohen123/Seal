@@ -60,7 +60,6 @@ function Enemy:on_death()
         x = self.x,
         y = self.y,
         radius = 12,
-        duration = 0.3,
         color = self.hit_color,
         target_color = self.color,
     }
