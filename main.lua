@@ -79,7 +79,7 @@ function love.load()
 end
 
 function love.update(dt)
-  player:update(dt)
+  player:update(dt, enemies, projectiles)
 
   for index = #enemies, 1, -1 do
     enemies[index]:update(dt, player, enemies)
@@ -151,13 +151,6 @@ end
 
 function love.keyreleased(key, scancode)
   player:keyreleased(key, scancode)
-end
-
-function love.mousepressed(x, y, button)
-  if button ~= 1 then return end
-  x, y = game_canvas:to_canvas_position(x, y)
-  if not x then return end
-  projectiles[#projectiles + 1] = player:shoot(x, y)
 end
 
 function love.focus(focused)
