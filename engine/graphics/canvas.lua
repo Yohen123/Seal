@@ -1,5 +1,42 @@
 Canvas = Object:extend()
 
+local function begin_canvas(canvas)
+    local previous_canvas = love.graphics.getCanvas()
+    love.graphics.push("all")
+    love.graphics.setCanvas(canvas)
+    love.graphics.origin()
+    return previous_canvas
+end
+
+local function end_canvas(previous_canvas)
+    love.graphics.setCanvas(previous_canvas)
+    love.graphics.pop()
+end
+
+local function clear_canvas(color)
+    color = color or {0, 0, 0, 0}
+    love.graphics.clear(color[1] or 0, color[2] or 0, color[3] or 0, color[4] or 1)
+end
+
+local function get_scale(width, height)
+    local window_width, window_height = love.graphics.getDimensions()
+    local scale = math.min(window_width / width, window_height / height)
+    return scale >= 1 and math.floor(scale) or scale
+end
+
+local function get_offset(width, height, scale)
+    local window_width, window_height = love.graphics.getDimensions()
+    local x = math.floor((window_width - width * scale) / 2)
+    local y = math.floor((window_height - height * scale) / 2)
+    return x, y
+end
+
+local function draw_canvas(canvas, x, y, scale)
+    love.graphics.origin()
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(canvas, x, y, 0, scale, scale)
+end
+
 function Canvas:init(width, height)
     self.width = width
     self.height = height
@@ -8,46 +45,16 @@ function Canvas:init(width, height)
 end
 
 function Canvas:draw_to(action, clear_color)
-    local previous_canvas = love.graphics.getCanvas()
-
-    love.graphics.push("all")
-    love.graphics.setCanvas(self.canvas)
-    love.graphics.origin()
-
-    if clear_color then
-        love.graphics.clear(
-            clear_color[1] or 0,
-            clear_color[2] or 0,
-            clear_color[3] or 0,
-            clear_color[4] or 1
-        )
-    else
-        love.graphics.clear(0, 0, 0, 0)
-    end
-
+    local previous_canvas = begin_canvas(self.canvas)
+    clear_canvas(clear_color)
     action()
-
-    love.graphics.setCanvas(previous_canvas)
-    love.graphics.pop()
+    end_canvas(previous_canvas)
     return self
 end
 
 function Canvas:get_window_transform()
-    local window_width, window_height = love.graphics.getDimensions()
-    local scale = math.floor(math.min(
-        window_width / self.width,
-        window_height / self.height
-    ))
-
-    if scale < 1 then
-        scale = math.min(
-            window_width / self.width,
-            window_height / self.height
-        )
-    end
-
-    local x = math.floor((window_width - self.width * scale) / 2)
-    local y = math.floor((window_height - self.height * scale) / 2)
+    local scale = get_scale(self.width, self.height)
+    local x, y = get_offset(self.width, self.height, scale)
     return x, y, scale
 end
 
@@ -55,9 +62,7 @@ function Canvas:draw_to_window()
     local x, y, scale = self:get_window_transform()
 
     love.graphics.push("all")
-    love.graphics.origin()
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.draw(self.canvas, x, y, 0, scale, scale)
+    draw_canvas(self.canvas, x, y, scale)
     love.graphics.pop()
     return self
 end
