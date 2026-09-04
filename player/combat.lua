@@ -17,12 +17,11 @@ function Player:get_attack_target(enemies)
   return target
 end
 
-function Player:update_attack(enemies, projectiles)
+function Player:update_attack(enemies, projectiles, effects)
   local hero = self:get_active_hero()
   if not hero or not hero:can_attack() then return end
-  if #projectiles >= self.max_projectiles then return end
 
   local target = self:get_attack_target(enemies)
   if not target then return end
-  projectiles[#projectiles + 1] = hero:attack(self.x, self.y, target.x, target.y)
+  hero:attack(self, target, enemies, projectiles, effects)
 end

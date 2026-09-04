@@ -21,11 +21,11 @@ function Player:init(args)
   self:init_player_heroes()
 end
 
-function Player:update(dt, enemies, projectiles)
+function Player:update(dt, enemies, projectiles, effects)
   self:update_dash(dt)
   self:update_switch(dt)
   self:update_heroes(dt)
-  self:update_attack(enemies, projectiles)
+  self:update_attack(enemies, projectiles, effects)
 end
 
 function Player:keypressed(key, scancode)

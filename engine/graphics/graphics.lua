@@ -17,6 +17,15 @@ function graphics.set_color(color)
   love.graphics.setColor(color_values(color))
 end
 
+function graphics.color_with_alpha(color, alpha)
+  return {
+    color.r or color[1] or 1,
+    color.g or color[2] or 1,
+    color.b or color[3] or 1,
+    alpha,
+  }
+end
+
 function graphics.shape(shape, color, line_width, ...)
   local mode = color and not line_width and "fill" or "line"
   love.graphics.push("all")

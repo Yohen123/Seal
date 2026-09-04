@@ -1,12 +1,9 @@
 Hero = Object:extend()
 
 function Hero:init(args)
-  self.name = args.name
-  self.color = args.color
-  self.projectile_speed = args.projectile_speed or 160
-  self.projectile_damage = args.projectile_damage or 10
-  self.attack_range = args.attack_range or 160
-  self.attack_interval = args.attack_interval or 0.6
+  for key, value in pairs(args or {}) do self[key] = value end
+  self.name = self.name or "HERO"
+  self.color = self.color or {1, 1, 1, 1}
   self.attack_cooldown_time = 0
 end
 
@@ -18,19 +15,16 @@ function Hero:can_attack()
   return self.attack_cooldown_time == 0
 end
 
-function Hero:attack(x, y, target_x, target_y)
+function Hero:attack(player, target, enemies, projectiles, effects)
   if not self:can_attack() then return end
+  if not self:perform_attack(player, target, enemies, projectiles, effects) then return end
   self.attack_cooldown_time = self.attack_interval
-  return self:shoot(x, y, target_x, target_y)
+  return true
 end
 
-function Hero:shoot(x, y, target_x, target_y)
-  return Projectile{
-    x = x,
-    y = y,
-    r = math.atan2(target_y - y, target_x - x),
-    speed = self.projectile_speed,
-    damage = self.projectile_damage,
-    color = self.color,
-  }
+function Hero:perform_attack()
+  return false
 end
+
+require("hero.shooter")
+require("hero.guard")

@@ -45,7 +45,7 @@ function love.load()
   effects = {}
   enemies = {
     Enemy{
-      x = 320,
+      x = 284,
       y = 135,
       color = colors.red,
       hit_color = colors.foreground,
@@ -83,8 +83,8 @@ function love.load()
     x = 240,
     y = 135,
     heroes = {
-      Hero{name = "SHOOTER", color = colors.yellow},
-      Hero{name = "GUARD", color = colors.blue},
+      Shooter{color = colors.yellow},
+      Guard{color = colors.blue},
     },
   }
 end
@@ -92,7 +92,7 @@ end
 function love.update(dt)
   local mouse_x, mouse_y = game_canvas:to_canvas_position(love.mouse.getPosition())
   player:set_aim_position(mouse_x, mouse_y)
-  player:update(dt, enemies, projectiles)
+  player:update(dt, enemies, projectiles, effects)
 
   for index = #enemies, 1, -1 do
     enemies[index]:update(dt, player, enemies)

@@ -1,8 +1,3 @@
-function Player:get_color_with_alpha(alpha)
-  local color = self:get_color()
-  return {color.r or color[1], color.g or color[2], color.b or color[3], alpha}
-end
-
 function Player:get_draw_size()
   if not self.switching then return self.size end
 
@@ -74,7 +69,8 @@ function Player:draw_dash_trail(size)
     love.graphics.translate(x, y)
     love.graphics.rotate(self.aim_r)
     love.graphics.scale(1.25, 0.6)
-    self:draw_rounded_square(0, 0, size, self:get_color_with_alpha(0.18 * fade / index))
+    self:draw_rounded_square(0, 0, size,
+      graphics.color_with_alpha(self:get_color(), 0.18 * fade / index))
     love.graphics.pop()
   end
 end
