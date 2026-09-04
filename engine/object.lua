@@ -10,30 +10,30 @@ function Object:init()
 end
 
 function Object:extend()
-    local cls = {}
-    for k, v in pairs(self) do
-        if k:sub(1, 2) == "__" then
-            cls[k] = v
-        end
+  local cls = {}
+  for k, v in pairs(self) do
+    if k:sub(1, 2) == "__" then
+      cls[k] = v
     end
-    cls.__index = cls
-    cls.super = self
-    setmetatable(cls, self)
-    return cls
+  end
+  cls.__index = cls
+  cls.super = self
+  setmetatable(cls, self)
+  return cls
 end
 
 function Object:implement(...)
-    for _, cls in pairs({...}) do
-        for k, v in pairs(cls) do
-            if self[k] == nil and type(v) == "function" then
-                self[k] = v
-            end
-        end
+  for _, cls in pairs({...}) do
+    for k, v in pairs(cls) do
+      if self[k] == nil and type(v) == "function" then
+        self[k] = v
+      end
     end
+  end
 end
 
 function Object:__call(...)
-    local obj = setmetatable({}, self)
-    obj:init(...)
-    return obj
+  local obj = setmetatable({}, self)
+  obj:init(...)
+  return obj
 end

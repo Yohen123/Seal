@@ -1,0 +1,5 @@
+* text=auto
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+*.lua text eol=lf
+*.md text eol=lf

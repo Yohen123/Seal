@@ -45,6 +45,16 @@ function love.load()
   effects = {}
   enemies = {
     Enemy{
+      x = 320,
+      y = 135,
+      color = colors.red,
+      hit_color = colors.foreground,
+      hp_bar_background = colors.hp_bar_background,
+      effects = effects,
+      invincible = true,
+      stationary = true,
+    },
+    Enemy{
       x = 360,
       y = 85,
       color = colors.red,
