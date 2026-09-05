@@ -36,6 +36,13 @@ function Player:start_switch()
   self.switch_cooldown_time = self.switch_cooldown
 end
 
+function Player:set_active_hero_level(level)
+  local hero = self:get_active_hero()
+  if not hero then return end
+  hero:set_level(level)
+  hero.attack_cooldown_time = 0
+end
+
 function Player:update_switch(dt)
   self.switch_cooldown_time = math.max(self.switch_cooldown_time - dt, 0)
   if not self.switching then return end

@@ -83,7 +83,7 @@ function love.load()
     x = 240,
     y = 135,
     heroes = {
-      Shooter{color = colors.yellow},
+      Cinder{color = colors.yellow},
       Guard{color = colors.blue},
     },
   }
@@ -105,7 +105,7 @@ function love.update(dt)
   end
 
   for index = #effects, 1, -1 do
-    effects[index]:update(dt)
+    effects[index]:update(dt, enemies)
     if effects[index].dead then table.remove(effects, index) end
   end
 end
@@ -121,7 +121,8 @@ end
 local function draw_ui()
   graphics.set_color(colors.foreground)
   local line_height = ui_font:getHeight() + 2
-  love.graphics.print("HERO: " .. player:get_active_hero().name, 10, 9)
+  local hero = player:get_active_hero()
+  love.graphics.print("HERO: " .. hero.name .. " LV." .. hero.level, 10, 9)
   love.graphics.print("DASH: LEFT CLICK", 10, 9 + line_height)
   if player:can_switch() then
     love.graphics.print("Q: READY", 10, 9 + line_height * 2)

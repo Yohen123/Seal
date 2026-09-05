@@ -29,5 +29,9 @@ function Player:update(dt, enemies, projectiles, effects)
 end
 
 function Player:keypressed(key, scancode)
-  if (scancode or key) == "q" then self:start_switch() end
+  local input = scancode or key
+  if input == "q" then self:start_switch() end
+  if input == "i" then self:set_active_hero_level(1) end
+  if input == "o" then self:set_active_hero_level(2) end
+  if input == "p" then self:set_active_hero_level(3) end
 end

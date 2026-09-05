@@ -10,6 +10,10 @@ function Projectile:init(args)
   self.width = self.width or 6
   self.height = self.height or 2
   self.color = self.color or {1, 1, 1, 1}
+  self.effects = self.effects or {}
+  self.pierce = self.pierce or 0
+  self.damage_decay = self.damage_decay or 1
+  self.hit_enemies = {}
   self:set_as_circle(2, "dynamic", "projectile")
   self:set_velocity(self.speed * math.cos(self.r), self.speed * math.sin(self.r))
 end
@@ -31,9 +35,18 @@ function Projectile:check_hits(enemies)
   if self.dead then return end
 
   for _, enemy in ipairs(enemies or {}) do
-    if not enemy.dead and self:is_colliding_with_object(enemy) then
+    if not enemy.dead and not self.hit_enemies[enemy] and
+      self:is_colliding_with_object(enemy) then
       enemy:hit(self.damage)
-      self.dead = true
+      self.hit_enemies[enemy] = true
+
+      if self.pierce <= 0 then
+        self.dead = true
+        return
+      end
+
+      self.pierce = self.pierce - 1
+      self.damage = self.damage * self.damage_decay
       return
     end
   end

@@ -57,3 +57,10 @@ function graphics.line(x1, y1, x2, y2, color, line_width)
   love.graphics.line(x1, y1, x2, y2)
   love.graphics.pop()
 end
+
+function graphics.polyline(color, line_width, ...)
+  love.graphics.push("all")
+  set_style(color, line_width)
+  love.graphics.line(...)
+  love.graphics.pop()
+end
